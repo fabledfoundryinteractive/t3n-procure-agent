@@ -96,3 +96,20 @@ test("T3N SentryAgent rejects an order when credential verification fails", asyn
   assert.strictEqual(result.approved, false);
   assert.match(result.reason, /did not pass/);
 });
+
+test("T3N SentryAgent records the DID returned by authenticated runtime setup", async () => {
+  let receivedKey = "";
+  const agent = new T3nProcureAgent(
+    "did:t3n:test:unconfigured",
+    5000,
+    verifiedTrust,
+    verifiedCredential,
+    async (apiKey) => {
+      receivedKey = apiKey;
+      return "did:t3n:test:authenticated";
+    }
+  );
+  const did = await agent.initialize("test-key-material");
+  assert.strictEqual(receivedKey, "test-key-material");
+  assert.strictEqual(did, "did:t3n:test:authenticated");
+});

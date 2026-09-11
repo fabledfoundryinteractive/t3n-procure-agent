@@ -16,7 +16,7 @@ It addresses the fundamental enterprise security challenge in agentic commerce: 
 
 ### Key Capabilities:
 1. **Fail-Closed Trust Verification:** Refuses order evaluation until the official SDK verifies the operator-signed sandbox trust manifest.
-2. **Honest Runtime Boundary:** A T3N API key and successful authenticated handshake are required before claiming enclave-backed execution; the static UI remains an explicitly labeled simulator.
+2. **Authenticated SDK Runtime:** With `T3N_API_KEY`, the Node client loads the SDK WASM component, verifies the signed trust manifest, performs `handshake()`, authenticates with `createEthAuthInput`, and retains the returned DID. The static UI remains an explicitly labeled simulator.
 3. **Decentralized Identity & Smart VCs:** Validates supplier Decentralized Identifiers (`did:t3n:...`) and Verifiable Credentials (SOC 2 Type II, ISO 27001, OFAC sanctions clearance).
 4. **Policy-Bounded Delegation:** Enforces rigid per-day spending limits and whitelisted supplier registries.
 5. **Non-Repudiation Receipts:** Produces cryptographic audit hashes and signed execution proofs.
@@ -46,6 +46,8 @@ npm install
 export T3N_API_KEY="your_t3n_key_from_claim_page"
 npx tsx src/agent.ts
 ```
+
+The key is read only from the process environment. Never commit it, print it, pass it as a command-line argument, or place it in browser-visible code.
 
 ### 3. Check Health & Enclave Telemetry
 ```bash

@@ -10,7 +10,7 @@ We are excited to submit **T3N SentryAgent** to the Terminal 3 Network team.
 T3N SentryAgent is architected for zero-maintenance enterprise autonomy:
 1. **Local Policy Boundary:** Deterministic supplier and budget policy is testable without credentials; this local layer is not described as confidential execution.
 2. **Deterministic Trust Gate:** The Node runtime enforces `fetchTrustedManifest("sandbox")` at boot and fails closed if the signed manifest cannot be verified.
-3. **Authenticated Runtime Boundary:** Enclave-backed execution may be claimed only after a valid T3N credential, successful handshake, and retained attestation evidence are added and tested.
+3. **Authenticated Runtime Boundary:** With `T3N_API_KEY`, the runtime loads the official WASM component, verifies the manifest, completes `handshake()` and `authenticate()`, and uses the returned DID. Enclave-backed execution may be claimed only after that live path succeeds and sanitized attestation evidence is retained.
 
 ---
 

@@ -1,7 +1,15 @@
 ﻿import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { fetchTrustedManifest, setEnvironment } from "@terminal3/t3n-sdk";
+import {
+  T3nClient,
+  createEthAuthInput,
+  eth_get_address,
+  fetchTrustedManifest,
+  loadWasmComponent,
+  metamask_sign,
+  setEnvironment
+} from "@terminal3/t3n-sdk";
 
 export interface ProcurementOrder {
   orderId: string;
@@ -23,10 +31,23 @@ export interface VerificationResult {
 
 export type TrustVerifier = () => Promise<void>;
 export type CredentialVerifier = (supplierDid: string, requirement: ProcurementOrder["complianceRequirements"][number]) => Promise<boolean>;
+export type RuntimeAuthenticator = (apiKey: string) => Promise<string>;
 
 export async function verifySandboxTrustAnchor(): Promise<void> {
   setEnvironment("sandbox");
   await fetchTrustedManifest("sandbox");
+}
+
+export async function authenticateSandboxRuntime(apiKey: string): Promise<string> {
+  setEnvironment("sandbox");
+  const address = eth_get_address(apiKey);
+  const client = new T3nClient({
+    trustAnchor: await fetchTrustedManifest("sandbox"),
+    wasmComponent: await loadWasmComponent(),
+    handlers: { EthSign: metamask_sign(address, undefined, apiKey) }
+  });
+  await client.handshake();
+  return (await client.authenticate(createEthAuthInput(address))).value;
 }
 
 export class T3nProcureAgent {
@@ -37,6 +58,7 @@ export class T3nProcureAgent {
   private trustVerified = false;
   private readonly verifyTrust: TrustVerifier;
   private readonly verifyCredential: CredentialVerifier;
+  private readonly authenticateRuntime: RuntimeAuthenticator;
 
   constructor(
     tenantDid: string = "did:t3n:enterprise:unconfigured",
@@ -44,12 +66,14 @@ export class T3nProcureAgent {
     verifyTrust: TrustVerifier = verifySandboxTrustAnchor,
     verifyCredential: CredentialVerifier = async () => {
       throw new Error("Authenticated T3N credential verification is not configured.");
-    }
+    },
+    authenticateRuntime: RuntimeAuthenticator = authenticateSandboxRuntime
   ) {
     this.tenantDid = tenantDid;
     this.maxDailyBudgetUsd = maxDailyBudgetUsd;
     this.verifyTrust = verifyTrust;
     this.verifyCredential = verifyCredential;
+    this.authenticateRuntime = authenticateRuntime;
     this.approvedSuppliers = new Set([
       "did:t3n:supplier:cloud-infra-core",
       "did:t3n:supplier:silicon-logistics-corp",
@@ -65,7 +89,8 @@ export class T3nProcureAgent {
     this.trustVerified = true;
 
     if (apiKey) {
-      console.log(`[+] Trust anchor verified. API key is configured for tenant: ${this.tenantDid}`);
+      this.tenantDid = await this.authenticateRuntime(apiKey);
+      console.log(`[+] Authenticated T3N session established for tenant: ${this.tenantDid}`);
     } else {
       console.log("[+] Trust anchor verified. Authentication is not configured; policy evaluation only.");
     }
