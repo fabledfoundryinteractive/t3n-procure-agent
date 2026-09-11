@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>T3N SentryAgent | Enterprise TEE Procurement Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #07090E; color: #F1F5F9; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .t3-glow { box-shadow: 0 0 25px rgba(125, 199, 238, 0.2); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-600 selection:text-white">
+
+  <!-- Nav -->
+  <nav class="border-b border-white/10 px-8 py-5 flex items-center justify-between bg-[#0F1420]/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-[#7DC7EE] flex items-center justify-center font-black text-black text-base">T3</div>
+      <span class="font-bold text-lg text-white">T3N <span class="text-[#7DC7EE] mono text-xs uppercase px-2 py-0.5 rounded bg-[#7DC7EE]/10 border border-[#7DC7EE]/30">SentryAgent</span></span>
+    </div>
+    <div class="flex items-center space-x-4 text-xs mono text-slate-400">
+      <span class="w-2 h-2 rounded-full bg-[#7DC7EE] animate-pulse"></span>
+      <span>TEE Trust Anchor: Validated</span>
+      <a href="https://github.com/fabledfoundryinteractive/t3n-procure-agent" target="_blank" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <main class="max-w-5xl mx-auto px-6 py-12 space-y-10 w-full">
+    <div class="text-center space-y-3">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 text-xs mono">
+        <span>Terminal 3 Network • Enterprise Agent Challenge</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+        Confidential <span class="text-[#7DC7EE]">TEE B2B Procurement</span> Agent
+      </h1>
+      <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+        Autonomous enterprise agent executing in Intel SGX enclaves via Terminal 3 Network ADK. Enforces policy-bounded delegation, evaluates Verifiable Credentials (VCs), and emits cryptographic audit proofs.
+      </p>
+    </div>
+
+    <!-- Simulator -->
+    <div class="bg-[#0F1420] border border-white/10 p-6 rounded-2xl shadow-2xl space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 pb-4 gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white">Interactive Order Evaluation Engine</h2>
+          <p class="text-xs text-slate-400">Simulate autonomous procurement approval inside the confidential enclave.</p>
+        </div>
+        <div class="flex items-center gap-3 mono text-xs">
+          <span class="text-slate-400">Daily Budget Ceiling:</span>
+          <span class="text-[#7DC7EE] font-bold">$25,000 USD</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs mono text-slate-400 uppercase">Select Supplier DID</label>
+            <select id="supplierSelect" class="w-full bg-[#07090E] border border-white/15 rounded-xl px-4 py-2.5 text-xs mono text-white focus:outline-none focus:border-[#7DC7EE]">
+              <option value="valid">did:t3n:supplier:cloud-infra-core (Approved / Compliant)</option>
+              <option value="rogue">did:t3n:supplier:unverified-shadow-broker (Unregistered)</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs mono text-slate-400 uppercase">Purchase Order Value ($ USD)</label>
+            <input id="orderValue" type="number" value="7500" min="500" max="50000" class="w-full bg-[#07090E] border border-white/15 rounded-xl px-4 py-2.5 text-xs mono text-white focus:outline-none focus:border-[#7DC7EE]">
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs mono text-slate-400 uppercase">Required Verifiable Credentials</label>
+            <div class="flex gap-2 text-xs mono">
+              <span class="px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/40 text-emerald-300">[✓] SOC 2 Type II</span>
+              <span class="px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/40 text-emerald-300">[✓] ISO 27001</span>
+            </div>
+          </div>
+
+          <button onclick="evalOrder()" class="w-full py-3 rounded-xl bg-[#7DC7EE] text-black font-bold hover:bg-[#7DC7EE]/90 transition text-xs mono uppercase tracking-wider">
+            Evaluate Order in TEE Enclave
+          </button>
+        </div>
+
+        <!-- Terminal Output -->
+        <div class="bg-black/70 rounded-xl p-4 border border-white/10 mono text-xs flex flex-col justify-between h-64">
+          <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
+            <span class="text-slate-400">Enclave Execution Telemetry</span>
+            <span class="text-[#7DC7EE] text-[10px]">INTEL SGX ATTESTED</span>
+          </div>
+          <div id="enclaveLogs" class="space-y-1 overflow-y-auto flex-1 text-slate-300 pr-1">
+            <div class="text-slate-500">// Ready. Submit purchase order for TEE verification...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Handover & Maintenance Matrix -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-[#0F1420] border border-white/10 p-5 rounded-xl space-y-2">
+        <span class="text-xs mono text-[#7DC7EE] uppercase font-bold">1. Ease of Maintenance</span>
+        <h3 class="text-sm font-bold text-white">Stateless & Resilient</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">Runs in minimal Node 22 runtime with automated health checks (`health.ts`) and zero external state dependencies.</p>
+      </div>
+
+      <div class="bg-[#0F1420] border border-white/10 p-5 rounded-xl space-y-2">
+        <span class="text-xs mono text-purple-400 uppercase font-bold">2. Handover Ready</span>
+        <h3 class="text-sm font-bold text-white">Runbook Included</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">Complete step-by-step handover runbook for the T3N team to host, containerize, and maintain on the T3N Startup Program.</p>
+      </div>
+
+      <div class="bg-[#0F1420] border border-white/10 p-5 rounded-xl space-y-2">
+        <span class="text-xs mono text-emerald-400 uppercase font-bold">3. Zero-Knowledge Proofs</span>
+        <h3 class="text-sm font-bold text-white">Confidential Audits</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">Cryptographic proof generation inside T3N hardware enclaves prevents enterprise pricing or PII leakage.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-6 text-center text-xs mono text-slate-500 bg-[#07090E]">
+    <div>Built for Terminal 3 Network Challenge • On-Chain Payout: <span class="text-slate-400">DXwUYnkHkgDUi7qerLg9fPZhSHksGNSsnGD1YHZudg8V</span></div>
+  </footer>
+
+  <script>
+    let accumulated = 0;
+    const maxBudget = 25000;
+
+    function addLog(msg, color="text-slate-300") {
+      const logs = document.getElementById("enclaveLogs");
+      const d = document.createElement("div");
+      d.className = color;
+      d.innerHTML = `<span class="text-slate-600">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+      logs.appendChild(d);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function evalOrder() {
+      const sup = document.getElementById("supplierSelect").value;
+      const amt = parseFloat(document.getElementById("orderValue").value);
+
+      addLog(`[ENCLAVE] Received Purchase Order ($${amt.toLocaleString()} USD)...`, "text-cyan-300");
+
+      if (sup === "rogue") {
+        addLog(`[REJECTED] Supplier DID not in enterprise approved registry.`, "text-red-400 font-bold");
+        return;
+      }
+
+      if (accumulated + amt > maxBudget) {
+        addLog(`[REJECTED] Order exceeds remaining daily budget ($${(maxBudget - accumulated).toLocaleString()} remaining).`, "text-red-400 font-bold");
+        return;
+      }
+
+      addLog(`[✓] Verifying supplier Verifiable Credential: SOC 2 Type II... PASS`, "text-emerald-400");
+      addLog(`[✓] Verifying supplier Verifiable Credential: ISO 27001... PASS`, "text-emerald-400");
+
+      accumulated += amt;
+      const hash = "0xT3N_" + Math.random().toString(16).slice(2, 10);
+      addLog(`[APPROVED] Enclave Attestation Valid. Audit Hash: ${hash}`, "text-[#7DC7EE] font-bold");
+    }
+  </script>
+</body>
+</html>

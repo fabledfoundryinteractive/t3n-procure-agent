@@ -1,0 +1,19 @@
+﻿{
+  "name": "t3n-procure-agent",
+  "version": "1.0.0",
+  "description": "Enterprise B2B Procurement, Verifiable Credential Compliance, and TEE Policy Agent for Terminal 3 Network (T3N)",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/agent.ts",
+    "health": "tsx src/health.ts",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@terminal3/t3n-sdk": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
