@@ -41,14 +41,16 @@
 
 ---
 
-### Bug #3: Error Message Ambiguity on Trust Manifest Timeouts
-* **Location:** `T3nClient` constructor trust anchor validation.
-* **Issue:** When `fetchTrustedManifest("testnet")` encounters an intermittent RPC timeout, the client immediately throws `Error: trustAnchor is required`. This misleads developers into thinking they forgot to pass the parameter, rather than diagnosing an outbound network timeout.
-* **Proposed Fix:** Differentiate between `missing parameter` and `failed manifest resolution`.
+### Bug #3: Sandbox trust manifest rejected as malformed
+* **Observed:** 2026-09-11 with `@terminal3/t3n-sdk@5.15.2` on Node 24.14.0.
+* **Reproduction:** Call `setEnvironment("sandbox")`, then `await fetchTrustedManifest("sandbox")`.
+* **Actual result:** `Error: Trust manifest at https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest is malformed.`
+* **Impact:** A correctly fail-closed client cannot complete the trust-anchor gate or proceed to a verified handshake.
+* **Suggested diagnostic improvement:** Include the missing or invalid manifest field in the sanitized error so operators can distinguish schema drift from truncation or an invalid signature.
 
 ---
 
 ## 2. Platform Strengths
-* **Uncompromising Security:** The TEE enclave trust anchor verification (`fetchTrustedManifest`) provides real cryptographic assurance that the agent is running in genuine confidential hardware, not a malicious mock.
+* **Fail-closed security design:** `fetchTrustedManifest` is documented to verify the operator signature against an SDK-pinned key and never return an unverified anchor. The current sandbox manifest error correctly blocks this project from claiming a verified enclave session.
 * **Frictionless Auth:** Instantly provisioning an enterprise DID (`did:t3n:...`) and test tokens without manual KYC approval accelerates time-to-first-call to under 5 minutes.
 * **Enterprise Fit:** Native Verifiable Credential support makes T3N the premier infrastructure for B2B multi-agent collaboration.

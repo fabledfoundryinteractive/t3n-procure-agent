@@ -1,5 +1,7 @@
 ﻿import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { createHash } from "node:crypto";
+import { fetchTrustedManifest, setEnvironment } from "@terminal3/t3n-sdk";
 
 export interface ProcurementOrder {
   orderId: string;
@@ -16,7 +18,15 @@ export interface VerificationResult {
   reason: string;
   auditHash: string;
   timestamp: string;
-  enclaveAttestation: string;
+  trustStatus: "verified";
+}
+
+export type TrustVerifier = () => Promise<void>;
+export type CredentialVerifier = (supplierDid: string, requirement: ProcurementOrder["complianceRequirements"][number]) => Promise<boolean>;
+
+export async function verifySandboxTrustAnchor(): Promise<void> {
+  setEnvironment("sandbox");
+  await fetchTrustedManifest("sandbox");
 }
 
 export class T3nProcureAgent {
@@ -24,10 +34,22 @@ export class T3nProcureAgent {
   private maxDailyBudgetUsd: number;
   private currentSpendUsd: number = 0;
   private approvedSuppliers: Set<string>;
+  private trustVerified = false;
+  private readonly verifyTrust: TrustVerifier;
+  private readonly verifyCredential: CredentialVerifier;
 
-  constructor(tenantDid: string = "did:t3n:enterprise:0x7a89bc44d12", maxDailyBudgetUsd: number = 25000) {
+  constructor(
+    tenantDid: string = "did:t3n:enterprise:unconfigured",
+    maxDailyBudgetUsd: number = 25000,
+    verifyTrust: TrustVerifier = verifySandboxTrustAnchor,
+    verifyCredential: CredentialVerifier = async () => {
+      throw new Error("Authenticated T3N credential verification is not configured.");
+    }
+  ) {
     this.tenantDid = tenantDid;
     this.maxDailyBudgetUsd = maxDailyBudgetUsd;
+    this.verifyTrust = verifyTrust;
+    this.verifyCredential = verifyCredential;
     this.approvedSuppliers = new Set([
       "did:t3n:supplier:cloud-infra-core",
       "did:t3n:supplier:silicon-logistics-corp",
@@ -37,18 +59,24 @@ export class T3nProcureAgent {
 
   async initialize(apiKey?: string): Promise<string> {
     console.log("[*] Initializing T3N ProcureAgent...");
-    console.log("[*] Verifying TEE Trust Anchor against T3N testnet manifest...");
+    console.log("[*] Verifying the operator-signed T3N sandbox trust manifest...");
+
+    await this.verifyTrust();
+    this.trustVerified = true;
 
     if (apiKey) {
-      console.log(`[+] Authenticated session established for tenant: ${this.tenantDid}`);
+      console.log(`[+] Trust anchor verified. API key is configured for tenant: ${this.tenantDid}`);
     } else {
-      console.log(`[+] Running in Verified TEE Sandbox mode (Tenant DID: ${this.tenantDid})`);
+      console.log("[+] Trust anchor verified. Authentication is not configured; policy evaluation only.");
     }
 
     return this.tenantDid;
   }
 
   async evaluateOrder(order: ProcurementOrder): Promise<VerificationResult> {
+    if (!this.trustVerified) {
+      throw new Error("Trust anchor is not verified. Call initialize() and resolve any verification error first.");
+    }
     console.log(`\n[*] Evaluating Procurement Order ${order.orderId} from ${order.supplierDid}...`);
     console.log(`    Total Value: $${order.totalAmountUsd.toLocaleString()} USD`);
 
@@ -59,7 +87,7 @@ export class T3nProcureAgent {
         reason: `REJECTED: Supplier ${order.supplierDid} is not in the enterprise approved registry.`,
         auditHash: "0x0000_SUPPLIER_NOT_ALLOWLISTED",
         timestamp: new Date().toISOString(),
-        enclaveAttestation: "T3N-TEE-INTEL-SGX-ATTESTATION-VALID"
+        trustStatus: "verified"
       };
     }
 
@@ -70,24 +98,37 @@ export class T3nProcureAgent {
         reason: `REJECTED: Order exceeds remaining daily procurement budget ($${(this.maxDailyBudgetUsd - this.currentSpendUsd).toLocaleString()} remaining).`,
         auditHash: "0x0000_BUDGET_EXCEEDED",
         timestamp: new Date().toISOString(),
-        enclaveAttestation: "T3N-TEE-INTEL-SGX-ATTESTATION-VALID"
+        trustStatus: "verified"
       };
     }
 
     for (const req of order.complianceRequirements) {
-      console.log(`    [✓] Verifying supplier cryptographic proof for ${req}... PASS`);
+      const verified = await this.verifyCredential(order.supplierDid, req);
+      if (!verified) {
+        return {
+          orderId: order.orderId,
+          approved: false,
+          reason: `REJECTED: Required credential ${req} did not pass the configured verifier.`,
+          auditHash: "sha256:credential-verification-failed",
+          timestamp: new Date().toISOString(),
+          trustStatus: "verified"
+        };
+      }
+      console.log(`    [✓] Credential verifier accepted ${req}.`);
     }
 
     this.currentSpendUsd += order.totalAmountUsd;
-    const auditHash = `0xT3N_${Buffer.from(order.orderId + this.currentSpendUsd).toString("hex").slice(0, 16)}`;
+    const auditHash = `sha256:${createHash("sha256")
+      .update(JSON.stringify({ order, tenantDid: this.tenantDid, currentSpendUsd: this.currentSpendUsd }))
+      .digest("hex")}`;
 
     return {
       orderId: order.orderId,
       approved: true,
-      reason: "APPROVED: All compliance credentials verified. Order routed to confidential settlement.",
+      reason: "APPROVED: Policy checks and configured credential verification passed. No settlement was executed.",
       auditHash,
       timestamp: new Date().toISOString(),
-      enclaveAttestation: "T3N-TEE-INTEL-SGX-ATTESTATION-VALID"
+      trustStatus: "verified"
     };
   }
 
@@ -121,4 +162,13 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-main().catch(console.error);
+const isDirectRun = process.argv[1]
+  ? fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+  : false;
+
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error("T3N initialization failed closed:", error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

@@ -8,9 +8,9 @@ We are excited to submit **T3N SentryAgent** to the Terminal 3 Network team.
 
 ## 2. Architecture & Operational Blueprint
 T3N SentryAgent is architected for zero-maintenance enterprise autonomy:
-1. **Confidential TEE Boundary:** All policy evaluation, credential decryption, and supplier evaluations execute inside Intel SGX / AMD SEV confidential enclaves.
-2. **Deterministic Trust Anchor:** Enforces `fetchTrustedManifest("testnet" | "production")` at boot, preventing man-in-the-middle attacks.
-3. **Stateless Scalability:** Can be deployed across multiple redundant enclave nodes behind a round-robin load balancer.
+1. **Local Policy Boundary:** Deterministic supplier and budget policy is testable without credentials; this local layer is not described as confidential execution.
+2. **Deterministic Trust Gate:** The Node runtime enforces `fetchTrustedManifest("sandbox")` at boot and fails closed if the signed manifest cannot be verified.
+3. **Authenticated Runtime Boundary:** Enclave-backed execution may be claimed only after a valid T3N credential, successful handshake, and retained attestation evidence are added and tested.
 
 ---
 
@@ -20,7 +20,7 @@ T3N SentryAgent is architected for zero-maintenance enterprise autonomy:
 Provision an enterprise identity on T3N and configure environment variables:
 ```bash
 export T3N_API_KEY="t3n_live_..."
-export T3N_CLUSTER="testnet" # or "production"
+export T3N_CLUSTER="sandbox" # production requires a separate verified release gate
 export ENTERPRISE_TENANT_DID="did:t3n:enterprise:0x..."
 ```
 
@@ -37,7 +37,7 @@ CMD ["npx", "tsx", "src/agent.ts"]
 
 ### Step 3: Health & Liveness Probes
 For Kubernetes / Docker Swarm deployments:
-- **Liveness Probe:** `npx tsx src/health.ts` (exits 0 when enclave attestation and trust anchors are valid).
+- **Liveness Probe:** `npm run health` (exits non-zero unless the official SDK accepts the live operator-signed trust manifest).
 - **Restart Policy:** `always` with exponential backoff on RPC network partitions.
 
 ### Step 4: Policy Reconfiguration

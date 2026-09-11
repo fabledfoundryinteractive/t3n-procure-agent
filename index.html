@@ -22,7 +22,7 @@
     </div>
     <div class="flex items-center space-x-4 text-xs mono text-slate-400">
       <span class="w-2 h-2 rounded-full bg-[#7DC7EE] animate-pulse"></span>
-      <span>TEE Trust Anchor: Validated</span>
+      <span>Browser Mode: Policy Simulator</span>
       <a href="https://github.com/fabledfoundryinteractive/t3n-procure-agent" target="_blank" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition">GitHub</a>
     </div>
   </nav>
@@ -37,7 +37,7 @@
         Confidential <span class="text-[#7DC7EE]">TEE B2B Procurement</span> Agent
       </h1>
       <p class="text-slate-400 text-sm max-w-2xl mx-auto">
-        Autonomous enterprise agent executing in Intel SGX enclaves via Terminal 3 Network ADK. Enforces policy-bounded delegation, evaluates Verifiable Credentials (VCs), and emits cryptographic audit proofs.
+        Interactive procurement policy simulator for the Terminal 3 Network ADK integration. Live trust verification and authenticated enclave execution run only in the Node client after the SDK verifies the operator-signed manifest.
       </p>
     </div>
 
@@ -46,7 +46,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-white/10 pb-4 gap-4">
         <div>
           <h2 class="text-lg font-bold text-white">Interactive Order Evaluation Engine</h2>
-          <p class="text-xs text-slate-400">Simulate autonomous procurement approval inside the confidential enclave.</p>
+          <p class="text-xs text-slate-400">Explore deterministic policy decisions locally. This page does not execute inside a confidential enclave.</p>
         </div>
         <div class="flex items-center gap-3 mono text-xs">
           <span class="text-slate-400">Daily Budget Ceiling:</span>
@@ -78,15 +78,15 @@
           </div>
 
           <button onclick="evalOrder()" class="w-full py-3 rounded-xl bg-[#7DC7EE] text-black font-bold hover:bg-[#7DC7EE]/90 transition text-xs mono uppercase tracking-wider">
-            Evaluate Order in TEE Enclave
+            Simulate Policy Evaluation
           </button>
         </div>
 
         <!-- Terminal Output -->
         <div class="bg-black/70 rounded-xl p-4 border border-white/10 mono text-xs flex flex-col justify-between h-64">
           <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
-            <span class="text-slate-400">Enclave Execution Telemetry</span>
-            <span class="text-[#7DC7EE] text-[10px]">INTEL SGX ATTESTED</span>
+            <span class="text-slate-400">Local Simulator Trace</span>
+            <span class="text-amber-300 text-[10px]">NO LIVE ATTESTATION</span>
           </div>
           <div id="enclaveLogs" class="space-y-1 overflow-y-auto flex-1 text-slate-300 pr-1">
             <div class="text-slate-500">// Ready. Submit purchase order for TEE verification...</div>
@@ -111,8 +111,8 @@
 
       <div class="bg-[#0F1420] border border-white/10 p-5 rounded-xl space-y-2">
         <span class="text-xs mono text-emerald-400 uppercase font-bold">3. Zero-Knowledge Proofs</span>
-        <h3 class="text-sm font-bold text-white">Confidential Audits</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">Cryptographic proof generation inside T3N hardware enclaves prevents enterprise pricing or PII leakage.</p>
+        <h3 class="text-sm font-bold text-white">Fail-Closed Integration</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">The Node client uses the official SDK and refuses evaluation when the signed trust manifest cannot be verified.</p>
       </div>
     </div>
   </main>
@@ -139,7 +139,7 @@
       const sup = document.getElementById("supplierSelect").value;
       const amt = parseFloat(document.getElementById("orderValue").value);
 
-      addLog(`[ENCLAVE] Received Purchase Order ($${amt.toLocaleString()} USD)...`, "text-cyan-300");
+      addLog(`[SIMULATOR] Received Purchase Order ($${amt.toLocaleString()} USD)...`, "text-cyan-300");
 
       if (sup === "rogue") {
         addLog(`[REJECTED] Supplier DID not in enterprise approved registry.`, "text-red-400 font-bold");
@@ -156,7 +156,7 @@
 
       accumulated += amt;
       const hash = "0xT3N_" + Math.random().toString(16).slice(2, 10);
-      addLog(`[APPROVED] Enclave Attestation Valid. Audit Hash: ${hash}`, "text-[#7DC7EE] font-bold");
+      addLog(`[APPROVED BY LOCAL POLICY] Simulated audit reference: ${hash}`, "text-[#7DC7EE] font-bold");
     }
   </script>
 </body>
